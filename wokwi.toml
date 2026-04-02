@@ -1,0 +1,8 @@
+[wokwi]
+version = 1
+elf = "firmware.elf"
+firmware = "firmware.bin"
+
+[wokwi.diagram]
+version = 1
+file = "diagram.json"
