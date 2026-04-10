@@ -4,7 +4,7 @@
     {
       "label": "Wokwi: Bridge",
       "type": "shell",
-      "command": "npm run bridge",
+      "command": "BRIDGE_PORT=3101 npm run bridge",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -20,7 +20,7 @@
         "background": {
           "activeOnStart": true,
           "beginsPattern": ".",
-          "endsPattern": "Wokwi bridge running on http://localhost:3001"
+          "endsPattern": "Wokwi bridge running on http://localhost:3101"
         }
       },
       "presentation": {
@@ -32,7 +32,7 @@
     {
       "label": "Wokwi: GUI Serial Bridge",
       "type": "shell",
-      "command": "npm run watch:gui",
+      "command": "BRIDGE_PORT=3101 npm run watch:gui",
       "options": {
         "cwd": "${workspaceFolder}"
       },
@@ -60,7 +60,7 @@
     {
       "label": "Dashboard: Dev Server",
       "type": "shell",
-      "command": "npm run dev",
+      "command": "VITE_SENSOR_API_BASE=http://127.0.0.1:3101 npm run dev -- --port 3000 --strictPort",
       "options": {
         "cwd": "${workspaceFolder}/../sewerly"
       },
