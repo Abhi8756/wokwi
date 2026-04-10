@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const express = require("express");
+const TelegramAlertBot = require("./telegram-bot");
 
 loadEnvFile(path.join(__dirname, ".env"));
 
@@ -26,6 +27,11 @@ const thresholds = {
   waterLevelWarning: 35,
   waterLevelDanger: 50,
 };
+
+// Initialize Telegram Bot
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const TELEGRAM_CHAT_IDS = (process.env.TELEGRAM_CHAT_IDS || "").split(",").filter(id => id.trim());
+const telegramBot = new TelegramAlertBot(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_IDS);
 
 const app = express();
 app.use(express.json());
@@ -558,6 +564,11 @@ app.post("/api/sensor", async (req, res) => {
       `[INGESTED] ${reading.source} | CH4 ${reading.ch4} ppm | H2S ${reading.h2s} ppm | Water Level ${reading.waterLevel} cm | ${reading.status}`
     );
 
+    // Check thresholds and send Telegram alerts
+    telegramBot.checkAndAlert(reading).catch((error) => {
+      console.error("❌ Telegram alert error:", error.message);
+    });
+
     res.json({
       status: "ok",
       storageMode,
@@ -566,6 +577,27 @@ app.post("/api/sensor", async (req, res) => {
     });
   } catch (error) {
     console.error(`❌ Bridge error: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/api/telegram/test", async (req, res) => {
+  try {
+    if (!telegramBot.enabled) {
+      return res.status(400).json({
+        error: "Telegram bot is not enabled. Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_IDS environment variables.",
+      });
+    }
+
+    const success = await telegramBot.sendTest();
+    res.json({
+      status: success ? "ok" : "failed",
+      message: success
+        ? "Test message sent successfully"
+        : "Failed to send test message",
+      chatCount: telegramBot.chatIds.length,
+    });
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
