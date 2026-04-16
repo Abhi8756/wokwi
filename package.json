@@ -8,9 +8,7 @@
     "dev": "node bridge.js",
     "bridge": "node bridge.js",
     "stream": "node continuous-data.js",
-    "test": "jest --verbose",
-    "test:bug-exploration": "jest bug-condition-exploration.test.js --verbose",
-    "test:legacy": "node test-data.js",
+    "test": "node test-data.js",
     "watch:gui": "node watch-rfc2217.js"
   },
   "dependencies": {

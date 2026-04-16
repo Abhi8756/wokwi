@@ -163,12 +163,38 @@ function isFirestorePrimary() {
 
 // Initialize Firebase Admin SDK
 console.log("🔧 Initializing Firebase...");
-if (admin && (process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.FIREBASE_PROJECT_ID)) {
+
+// Check if Firebase credentials are available
+const hasFirebaseCredentials = 
+  process.env.GOOGLE_APPLICATION_CREDENTIALS || 
+  (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY);
+
+if (admin && hasFirebaseCredentials) {
   try {
-    admin.initializeApp({
-      credential: admin.credential.applicationDefault(),
-      projectId: process.env.FIREBASE_PROJECT_ID
-    });
+    // Use individual env vars if available, otherwise use application default
+    if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+      // Initialize with individual environment variables
+      const serviceAccount = {
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+      };
+      
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        projectId: process.env.FIREBASE_PROJECT_ID
+      });
+      
+      console.log('✅ Firebase initialized with environment variables');
+    } else {
+      // Use application default credentials (GOOGLE_APPLICATION_CREDENTIALS)
+      admin.initializeApp({
+        credential: admin.credential.applicationDefault(),
+        projectId: process.env.FIREBASE_PROJECT_ID
+      });
+      
+      console.log('✅ Firebase initialized with application default credentials');
+    }
     
     db = admin.firestore();
     storageMode = determineStorageBackend();
@@ -187,6 +213,8 @@ if (admin && (process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.FIREBASE
     console.error('❌ Firebase initialization failed:', error.message);
     console.log('📝 Falling back to in-memory storage');
     storageMode = "memory";
+    db = null;
+    admin = null;
   }
 } else {
   console.log('📝 No Firebase credentials found. Using in-memory storage.');
@@ -383,6 +411,14 @@ const thresholds = {
     ch4: parseFloat(process.env.CH4_HYSTERESIS || "50.0"),     // 50 ppm hysteresis  
     waterLevel: parseFloat(process.env.WATER_HYSTERESIS || "2.0") // 2 cm hysteresis
   }
+};
+
+// Previous metric status for hysteresis logic (REQ-004)
+// Initialize with 'safe' status for all metrics
+const previousMetricStatus = {
+  ch4: 'safe',
+  h2s: 'safe',
+  waterLevel: 'safe'
 };
 
 // Task 2.4.5: Alert Escalation Configuration (REQ-026)
