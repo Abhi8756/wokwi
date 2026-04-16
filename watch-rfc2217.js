@@ -7,6 +7,10 @@ const BRIDGE_PORT = Number(process.env.BRIDGE_PORT || 3001);
 const BRIDGE_HOST = process.env.BRIDGE_HOST || '127.0.0.1';
 const RECONNECT_DELAY_MS = 2000;
 
+// API Key Authentication (REQ-003)
+const API_KEY = process.env.API_KEY || process.env.BRIDGE_API_KEY;
+const API_KEY_HEADER = "X-API-Key";
+
 let socket = null;
 let reconnectTimer = null;
 let lineBuffer = '';
@@ -24,16 +28,23 @@ function sendData(data) {
       source: data.source || 'wokwi-gui',
     });
 
+    const headers = {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(payload),
+    };
+
+    // Add API key header if configured (REQ-003)
+    if (API_KEY) {
+      headers[API_KEY_HEADER] = API_KEY;
+    }
+
     const request = http.request(
       {
         hostname: BRIDGE_HOST,
         port: BRIDGE_PORT,
         path: '/api/sensor',
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(payload),
-        },
+        headers,
       },
       (response) => {
         let body = '';
@@ -46,7 +57,14 @@ function sendData(data) {
             return;
           }
 
-          reject(new Error(`Bridge responded with status ${response.statusCode}`));
+          // Handle authentication errors specifically
+          if (response.statusCode === 401) {
+            reject(new Error(`Authentication required: API key missing (set API_KEY environment variable)`));
+          } else if (response.statusCode === 403) {
+            reject(new Error(`Authentication failed: Invalid API key`));
+          } else {
+            reject(new Error(`Bridge responded with status ${response.statusCode}`));
+          }
         });
       }
     );
@@ -203,6 +221,14 @@ console.log('============================================================');
 console.log('🖥️  Wokwi GUI Serial Watcher');
 console.log('============================================================');
 console.log(`📡 Forwarding simulator data to http://${BRIDGE_HOST}:${BRIDGE_PORT}/api/sensor`);
+
+// Show authentication status (REQ-003)
+if (API_KEY) {
+  console.log(`🔐 API Key authentication: ENABLED`);
+} else {
+  console.log(`🔓 API Key authentication: DISABLED (set API_KEY environment variable if required)`);
+}
+
 console.log('');
 
 connectToSimulator();

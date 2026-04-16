@@ -2,6 +2,64 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "MQTT: Start Broker",
+      "type": "shell",
+      "command": "docker-compose up -d mosquitto && echo '✅ MQTT Broker started on port 1883'",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "mqtt"
+      }
+    },
+    {
+      "label": "MQTT: Stop Broker",
+      "type": "shell",
+      "command": "docker-compose down && echo '✅ MQTT Broker stopped'",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "mqtt"
+      }
+    },
+    {
+      "label": "MQTT: Monitor Traffic",
+      "type": "shell",
+      "command": "docker exec -it manhole-mqtt-broker mosquitto_sub -t 'manhole/#' -v",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "mqtt"
+      }
+    },
+    {
+      "label": "MQTT: View Broker Logs",
+      "type": "shell",
+      "command": "docker logs -f manhole-mqtt-broker",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "mqtt"
+      }
+    },
+    {
       "label": "Wokwi: Bridge",
       "type": "shell",
       "command": "BRIDGE_PORT=3101 npm run bridge",
@@ -94,6 +152,32 @@
         "Dashboard: Dev Server"
       ],
       "problemMatcher": []
+    },
+    {
+      "label": "System: Start Complete Stack (with MQTT)",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "MQTT: Start Broker",
+        "System: Start GUI Slider Stack"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "System: Stop All Services",
+      "type": "shell",
+      "command": "docker-compose down && echo '✅ All services stopped. Press Ctrl+C in other terminals to stop Bridge and Dashboard.'",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
     }
   ]
 }
